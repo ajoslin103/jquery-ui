@@ -134,6 +134,7 @@ $.widget("ui.selectmenu", {
 			.find('option')
 			.each(function(){
 				selectOptionData.push({
+					disabled: $(this).attr('disabled'), // capture option disabled state // ajoslin
 					value: $(this).attr('value'),
 					text: self._formatText(jQuery(this).text()),
 					selected: $(this).attr('selected'),
@@ -147,16 +148,19 @@ $.widget("ui.selectmenu", {
 		
 		//write li's
 		for (var i = 0; i < selectOptionData.length; i++) {
-			var thisLi = $('<li role="presentation"><a href="#" tabindex="-1" role="option" aria-selected="false">'+ selectOptionData[i].text +'</a></li>')
+				var disabledClass = (selectOptionData[i].disabled)? 'ui-state-disabled': ''; // use disabled state value to generate a class // ajoslin
+				var thisLi = $('<li role="presentation" class="'+disabledClass+'"><a href="#" tabindex="-1" role="option" aria-selected="false">'+ selectOptionData[i].text +'</a></li>') // add that class // ajoslin
 				.data('index',i)
 				.addClass(selectOptionData[i].classes)
 				.data('optionClasses', selectOptionData[i].classes|| '')
 				.mouseup(function(event){
 						if(self._safemouseup){
-							var changed = $(this).data('index') != self._selectedIndex();
-							self.value($(this).data('index'));
-							self.select(event);
-							if(changed){ self.change(event); }
+							if (! selectOptionData[$(this).data('index')].disabled) { // don't record mouseup over disabled items // ajoslin
+								var changed = $(this).data('index') != self._selectedIndex();
+								self.value($(this).data('index'));
+								self.select(event);
+								if(changed){ self.change(event); }
+							}
 							self.close(event,true);
 						}
 					return false;
@@ -166,8 +170,10 @@ $.widget("ui.selectmenu", {
 				})
 				.bind('mouseover focus', function(){ 
 					self._selectedOptionLi().addClass(activeClass); 
-					self._focusedOptionLi().removeClass(self.widgetBaseClass+'-item-focus ui-state-hover'); 
-					$(this).removeClass('ui-state-active').addClass(self.widgetBaseClass + '-item-focus ui-state-hover'); 
+					if (! ($(this).data('disabled'))) { // don't hover over disabled items // ajoslin
+						self._focusedOptionLi().removeClass(self.widgetBaseClass+'-item-focus ui-state-hover'); 
+						$(this).removeClass('ui-state-active').addClass(self.widgetBaseClass + '-item-focus ui-state-hover'); 
+					}
 				})
 				.bind('mouseout blur', function(){ 
 					if($(this).is( self._selectedOptionLi() )){ $(this).addClass(activeClass); }
@@ -541,7 +547,7 @@ $.widget("ui.selectmenu", {
 		// set values
 		this.list.css({
 			top: menuTop,	
-			left: this.newelement.offset().left
+			left: this.newelement.offset().left - (o.menuWidth - o.width + o.handleWidth) // align to handle // ajoslin
 		});
 	},	
 	_pageScroll: function() {
